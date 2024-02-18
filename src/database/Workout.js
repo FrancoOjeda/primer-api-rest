@@ -1,14 +1,36 @@
 const DB = require('./db.json')
 const { saveToDatabase } = require('./utils')
 
-const getAllWorkouts = () => {
-  return DB.workouts
+const getAllWorkouts = (filterParams) => {
+  try {
+    let workouts = DB.workouts
+    if (filterParams.mode) {
+      return DB.workouts.filter((workout) => workout.mode.toLowerCase().includes(filterParams.mode.toLowerCase()))
+    }
+    return DB.workouts
+  } catch {
+    throw {
+      status: 500,
+      message: error?.message || 'Internal Server Error'
+    }
+  }
+
 }
 
 const getOneWorkout = (workoutID) => {
-  const workout = DB.workouts.find((workout) => workout.id === workoutID)
+  try {
+    const workout = DB.workouts.find((workout) => workout.id === workoutID)
+  } catch (error) {
+    throw {
+      status: 500,
+      message: error?.message || 'Internal Server Error'
+    }
+  }
   if (!workout) {
-    return
+    throw {
+      status: 404,
+      message: `No workout found with the id of ${workoutID}`
+    }
   }
   return workout
 }
@@ -18,11 +40,21 @@ const createNewWorkout = (newWorkout) => {
     DB.workouts.findIndex((workout) => workout.name === newWorkout.name) > -1
   console.log(isAlreadyAdded);
   if (isAlreadyAdded) {
-    return
+    throw {
+      status: 400,
+      message: `Workout with the name ${newWorkout.name} already exists`
+    }
   }
-  DB.workouts.push(newWorkout)
-  saveToDatabase(DB)
-  return newWorkout
+  try {
+    DB.workouts.push(newWorkout)
+    saveToDatabase(DB)
+    return newWorkout
+  } catch {
+    throw {
+      status: 500,
+      message: error?.message || 'Internal Server Error'
+    }
+  }
 }
 
 const updateOneWorkout = (workoutID, changes) => {
@@ -32,19 +64,29 @@ const updateOneWorkout = (workoutID, changes) => {
     )
   )
   if (indexForUpdate === -1) {
-    return
+    throw {
+      status: 404,
+      message: `No workout found with the id of ${workoutID}`
+    }
   }
+  try {
 
-  const updatedWorkout = {
-    ...DB.workouts[indexForUpdate],
-    ...changes,
-    updatedAt: new Date().toLocaleDateString('en-US', { timeZone: "UTC" })
+    const updatedWorkout = {
+      ...DB.workouts[indexForUpdate],
+      ...changes,
+      updatedAt: new Date().toLocaleDateString('en-US', { timeZone: "UTC" })
+    }
+
+    DB.workouts[indexForUpdate] = updatedWorkout
+
+    saveToDatabase(DB)
+    return updatedWorkout
+  } catch {
+    throw {
+      status: 500,
+      message: error?.message || 'Internal Server Error'
+    }
   }
-
-  DB.workouts[indexForUpdate] = updatedWorkout
-
-  saveToDatabase(DB)
-  return updatedWorkout
 }
 
 const deleteOneWorkout = (workoutID) => {
@@ -52,10 +94,20 @@ const deleteOneWorkout = (workoutID) => {
     (workoud) => workoud.id === workoutID
   )
   if (indexForDelete === -1) {
-    return
+    throw {
+      status: 404,
+      message: `No workout found with the id of ${workoutID}`
+    }
   }
-  DB.workouts.splice(indexForDelete, 1)
-  saveToDatabase(DB)
+  try {
+    DB.workouts.splice(indexForDelete, 1)
+    saveToDatabase(DB)
+  } catch {
+    throw {
+      status: 500,
+      message: error?.message || 'Internal Server Error'
+    }
+  }
 }
 
 
